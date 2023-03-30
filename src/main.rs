@@ -1,0 +1,125 @@
+use actix_web::{middleware::Logger, post, web, App, HttpResponse, HttpServer, Responder};
+use env_logger::Env;
+use lmc_assembly::{self, ExecutionState, Output};
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize)]
+struct ExecutionRequest {
+    state: ExecutionState,
+    input: Vec<i16>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct ExecutionResponse {
+    state: ExecutionState,
+    output: Vec<Output>,
+    input_success: Option<bool>,
+}
+
+#[post("/assemble")]
+async fn assemble(req_body: String) -> impl Responder {
+    let parsed = lmc_assembly::parse(req_body.as_str(), false);
+    let assembled = lmc_assembly::assemble(parsed);
+
+    let mut assembled_string = String::from("[");
+    for i in 0..assembled.len() {
+        assembled_string.push_str(&assembled[i].to_string());
+        assembled_string.push_str(",");
+    }
+    assembled_string.push_str("]");
+
+    let state = ExecutionState {
+        pc: 0,
+        acc: 0,
+        cir: 0,
+        mar: 0,
+        mdr: 0,
+        ram: assembled,
+    };
+
+    let response = ExecutionResponse {
+        state,
+        output: Vec::new(),
+        input_success: None,
+    };
+    HttpResponse::Ok().json(response)
+}
+
+struct IOHandler {
+    input: Vec<i16>,
+    input_success: Option<bool>,
+    output: Vec<Output>,
+}
+
+impl lmc_assembly::LMCIO for IOHandler {
+    fn get_input(&mut self) -> i16 {
+        if !self.input.is_empty() {
+            self.input_success = Some(true);
+            self.input.pop().unwrap()
+        } else {
+            self.input_success = Some(false);
+            0
+        }
+    }
+    fn print_output(&mut self, val: lmc_assembly::Output) {
+        self.output.push(val);
+    }
+}
+
+#[post("/step")]
+async fn step_execution(request: web::Json<ExecutionRequest>) -> impl Responder {
+    let state = request.into_inner();
+
+    let mut execution_state = state.state;
+    let mut io_handler = IOHandler {
+        input: state.input,
+        input_success: None,
+        output: Vec::new(),
+    };
+
+    execution_state.step(&mut io_handler);
+
+    let input_success = io_handler.input_success;
+
+    match input_success {
+        Some(true) => {
+            let response = ExecutionResponse {
+                state: execution_state,
+                output: io_handler.output,
+                input_success: Some(true),
+            };
+            return HttpResponse::Ok().json(response);
+        }
+        Some(false) => {
+            let response = ExecutionResponse {
+                state: execution_state,
+                output: vec![],
+                input_success: Some(false),
+            };
+            return HttpResponse::BadRequest().json(response);
+        }
+        None => {
+            let response = ExecutionResponse {
+                state: execution_state,
+                output: io_handler.output,
+                input_success: None,
+            };
+            return HttpResponse::Ok().json(response);
+        }
+    }
+}
+
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
+    env_logger::init_from_env(Env::default().default_filter_or("info"));
+
+    HttpServer::new(|| {
+        App::new()
+            .wrap(Logger::default())
+            .service(assemble)
+            .service(step_execution)
+    })
+    .bind(("127.0.0.1", 8080))?
+    .run()
+    .await
+}
