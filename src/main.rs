@@ -1,7 +1,12 @@
-use actix_web::{middleware::Logger, post, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{get, middleware::Logger, post, web, App, HttpResponse, HttpServer, Responder};
 use env_logger::Env;
 use lmc_assembly::{self, ExecutionState, Output};
 use serde::{Deserialize, Serialize};
+
+#[get("/")]
+async fn index() -> impl Responder {
+    HttpResponse::Ok().body("Hello world!")
+}
 
 #[derive(Serialize, Deserialize)]
 struct ExecutionRequest {
@@ -14,6 +19,7 @@ struct ExecutionResponse {
     state: ExecutionState,
     output: Vec<Output>,
     input_success: Option<bool>,
+    next_requires_input: bool,
 }
 
 #[post("/assemble")]
@@ -41,6 +47,7 @@ async fn assemble(req_body: String) -> impl Responder {
         state,
         output: Vec::new(),
         input_success: None,
+        next_requires_input: false,
     };
     HttpResponse::Ok().json(response)
 }
@@ -84,6 +91,7 @@ async fn step_execution(request: web::Json<ExecutionRequest>) -> impl Responder 
     match input_success {
         Some(true) => {
             let response = ExecutionResponse {
+                next_requires_input: execution_state.cir == 901,
                 state: execution_state,
                 output: io_handler.output,
                 input_success: Some(true),
@@ -92,6 +100,7 @@ async fn step_execution(request: web::Json<ExecutionRequest>) -> impl Responder 
         }
         Some(false) => {
             let response = ExecutionResponse {
+                next_requires_input: execution_state.cir == 901,
                 state: execution_state,
                 output: vec![],
                 input_success: Some(false),
@@ -100,6 +109,7 @@ async fn step_execution(request: web::Json<ExecutionRequest>) -> impl Responder 
         }
         None => {
             let response = ExecutionResponse {
+                next_requires_input: execution_state.cir == 901,
                 state: execution_state,
                 output: io_handler.output,
                 input_success: None,
@@ -118,6 +128,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(Logger::default())
             .service(assemble)
             .service(step_execution)
+            .service(index)
     })
     .bind(("127.0.0.1", 8080))?
     .run()
