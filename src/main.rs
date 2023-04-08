@@ -27,22 +27,22 @@ async fn assemble(req_body: String) -> impl Responder {
     let parsed = match lmc_assembly::parse(req_body.as_str(), false) {
         Ok(parsed) => parsed,
         Err(e) => {
-            return HttpResponse::BadRequest().body(e.to_string());
+            return HttpResponse::BadRequest().body(e);
         }
     };
     let assembled = match lmc_assembly::assemble(parsed) {
         Ok(assembled) => assembled,
         Err(e) => {
-            return HttpResponse::BadRequest().body(e.to_string());
+            return HttpResponse::BadRequest().body(e);
         }
     };
 
-    let mut assembled_string = String::from("[");
-    for i in 0..assembled.len() {
-        assembled_string.push_str(&assembled[i].to_string());
-        assembled_string.push_str(",");
+    let mut assembled_string = String::from('[');
+    for item in &assembled {
+        assembled_string.push_str(&item.to_string());
+        assembled_string.push(',');
     }
-    assembled_string.push_str("]");
+    assembled_string.push(']');
 
     let state = ExecutionState {
         pc: 0,
@@ -97,7 +97,7 @@ async fn step_execution(request: web::Json<ExecutionRequest>) -> impl Responder 
     match execution_state.step(&mut io_handler) {
         Ok(_) => {}
         Err(e) => {
-            return HttpResponse::BadRequest().body(e.to_string());
+            return HttpResponse::BadRequest().body(e);
         }
     }
 
@@ -111,7 +111,7 @@ async fn step_execution(request: web::Json<ExecutionRequest>) -> impl Responder 
                 output: io_handler.output,
                 input_success: Some(true),
             };
-            return HttpResponse::Ok().json(response);
+            HttpResponse::Ok().json(response)
         }
         Some(false) => {
             let response = ExecutionResponse {
@@ -120,7 +120,7 @@ async fn step_execution(request: web::Json<ExecutionRequest>) -> impl Responder 
                 output: vec![],
                 input_success: Some(false),
             };
-            return HttpResponse::BadRequest().json(response);
+            HttpResponse::BadRequest().json(response)
         }
         None => {
             let response = ExecutionResponse {
@@ -129,7 +129,7 @@ async fn step_execution(request: web::Json<ExecutionRequest>) -> impl Responder 
                 output: io_handler.output,
                 input_success: None,
             };
-            return HttpResponse::Ok().json(response);
+            HttpResponse::Ok().json(response)
         }
     }
 }
