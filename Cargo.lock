@@ -659,9 +659,9 @@ dependencies = [
 
 [[package]]
 name = "lmc-assembly"
-version = "0.1.5"
+version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "071578b1a5c5cdfa717469b2ed96525e34b3a7d9519f8faab53cd7a11918b41d"
+checksum = "fb3e5b5e4cd5a6721d0781aa45ac71fe2ccd2ead18a31d17b9043d5d7ae5a77f"
 dependencies = [
  "serde",
  "serde_arrays",

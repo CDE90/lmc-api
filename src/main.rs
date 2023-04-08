@@ -24,8 +24,18 @@ struct ExecutionResponse {
 
 #[post("/assemble")]
 async fn assemble(req_body: String) -> impl Responder {
-    let parsed = lmc_assembly::parse(req_body.as_str(), false);
-    let assembled = lmc_assembly::assemble(parsed);
+    let parsed = match lmc_assembly::parse(req_body.as_str(), false) {
+        Ok(parsed) => parsed,
+        Err(e) => {
+            return HttpResponse::BadRequest().body(e.to_string());
+        }
+    };
+    let assembled = match lmc_assembly::assemble(parsed) {
+        Ok(assembled) => assembled,
+        Err(e) => {
+            return HttpResponse::BadRequest().body(e.to_string());
+        }
+    };
 
     let mut assembled_string = String::from("[");
     for i in 0..assembled.len() {
@@ -84,7 +94,12 @@ async fn step_execution(request: web::Json<ExecutionRequest>) -> impl Responder 
         output: Vec::new(),
     };
 
-    execution_state.step(&mut io_handler);
+    match execution_state.step(&mut io_handler) {
+        Ok(_) => {}
+        Err(e) => {
+            return HttpResponse::BadRequest().body(e.to_string());
+        }
+    }
 
     let input_success = io_handler.input_success;
 
