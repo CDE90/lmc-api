@@ -3,7 +3,7 @@ import requests
 
 session = requests.Session()
 
-url = "http://localhost:8080/"
+url = "http://api.lmc.ethancoward.dev/"
 
 assemble_url = url + "assemble"
 

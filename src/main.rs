@@ -106,7 +106,8 @@ async fn step_execution(request: web::Json<ExecutionRequest>) -> impl Responder 
     match input_success {
         Some(true) => {
             let response = ExecutionResponse {
-                next_requires_input: execution_state.cir == 901,
+                next_requires_input: execution_state.ram.get(execution_state.pc as usize)
+                    == Some(&901),
                 state: execution_state,
                 output: io_handler.output,
                 input_success: Some(true),
@@ -115,7 +116,8 @@ async fn step_execution(request: web::Json<ExecutionRequest>) -> impl Responder 
         }
         Some(false) => {
             let response = ExecutionResponse {
-                next_requires_input: execution_state.cir == 901,
+                next_requires_input: execution_state.ram.get(execution_state.pc as usize)
+                    == Some(&901),
                 state: execution_state,
                 output: vec![],
                 input_success: Some(false),
@@ -124,7 +126,8 @@ async fn step_execution(request: web::Json<ExecutionRequest>) -> impl Responder 
         }
         None => {
             let response = ExecutionResponse {
-                next_requires_input: execution_state.cir == 901,
+                next_requires_input: execution_state.ram.get(execution_state.pc as usize)
+                    == Some(&901),
                 state: execution_state,
                 output: io_handler.output,
                 input_success: None,

@@ -648,7 +648,7 @@ checksum = "cd550e73688e6d578f0ac2119e32b797a327631a42f9433e59d02e139c8df60d"
 
 [[package]]
 name = "lmc-api"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "actix-web",
  "env_logger",
