@@ -145,7 +145,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         App::new()
             .wrap(Logger::default())
-            .wrap(Cors::default().allow_any_origin())
+            .wrap(Cors::permissive())
             .service(assemble)
             .service(step_execution)
             .service(index)
