@@ -1,3 +1,4 @@
+use actix_cors::Cors;
 use actix_web::{get, middleware::Logger, post, web, App, HttpResponse, HttpServer, Responder};
 use env_logger::Env;
 use lmc_assembly::{self, ExecutionState, Output};
@@ -144,6 +145,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         App::new()
             .wrap(Logger::default())
+            .wrap(Cors::default().allow_any_origin())
             .service(assemble)
             .service(step_execution)
             .service(index)
